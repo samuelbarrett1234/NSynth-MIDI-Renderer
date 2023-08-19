@@ -36,8 +36,34 @@ class NoteSynthesizer:
         self.preset = preset
         self.preloaded = False
 
+    def render_midi_file(self,
+                         midi_filename: Path,
+                         *,
+                         instrument: str = 'guitar',
+                         source_type: str = 'acoustic',
+                         preset: Optional[int] = None,
+                         playback_speed: float = 1.0,
+                         duration_scale: float = 1.0,
+                         transpose: Optional[int] = None,
+                         eps: float = 1.0e-9) -> Tuple[np.ndarray, int]:
+
+        seq, end_time = self._read_midi(midi_filename)
+
+        return self.render_sequence(
+            seq=seq,
+            end_time=end_time,
+            instrument=instrument,
+            source_type=source_type,
+            preset=preset,
+            playback_speed=playback_speed,
+            duration_scale=duration_scale,
+            transpose=transpose,
+            eps=eps
+        )
+
     def render_sequence(self,
-                        midi_filename: Path,
+                        seq: List[Tuple[int, int, float, float]],
+                        end_time: float,
                         *,
                         instrument: str = 'guitar',
                         source_type: str = 'acoustic',
@@ -53,7 +79,6 @@ class NoteSynthesizer:
         if transpose is None:
             transpose = self.transpose
 
-        seq, end_time = self._read_midi(midi_filename)
         total_length = int(end_time * self.sample_rate / playback_speed)
 
         data = np.zeros(total_length)
@@ -66,7 +91,7 @@ class NoteSynthesizer:
                 duration = int(duration * duration_scale)
                 end_sample = start_sample + duration
 
-            note_filename = self._get_note_name(note=note+transpose, 
+            note_filename = self._get_note_name(note=note + transpose, 
                                                 velocity=velocity, 
                                                 instrument=instrument, 
                                                 source_type=source_type,
@@ -133,7 +158,7 @@ class NoteSynthesizer:
 
         midi_data = PrettyMIDI(filename)
         end_time = midi_data.get_end_time()
-        
+
         sequence = []
         for instrument in midi_data.instruments:
             for note in instrument.notes:
@@ -148,7 +173,7 @@ class NoteSynthesizer:
 
         return sequence, end_time
 
-    def _render_note(self, note_filename: Path, duration) -> np.ndarray:
+    def _render_note(self, note_filename: Path, duration: int) -> np.ndarray:
 
         try:
             if self.preloaded:
@@ -219,7 +244,7 @@ if __name__ == "__main__":
             args.instrument, args.source_type
         )
 
-    y, _ = synth.render_sequence(
+    y, _ = synth.render_midi_file(
         sequence=args.seq,
         instrument=args.instrument,
         source_type=args.source_type,
