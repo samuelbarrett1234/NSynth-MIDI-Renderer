@@ -19,7 +19,7 @@ class NoteSynthesizer:
     def __init__(self,
                  dataset_path: Path,
                  *,
-                 sr: int = 44100,
+                 sample_rate: int = 44100,
                  transpose: int=0,
                  leg_stac: float=.9,
                  velocities = np.arange(0, 128),
@@ -29,7 +29,7 @@ class NoteSynthesizer:
             raise ValueError(f"Cannot find directory `{dataset_path}`")
 
         self.dataset_path = dataset_path
-        self.sr = sr
+        self.sample_rate = sample_rate
         self.transpose = transpose
         self.leg_stac = leg_stac
         self.velocities = np.array(velocities, dtype=np.int32)
@@ -54,7 +54,7 @@ class NoteSynthesizer:
             transpose = self.transpose
 
         seq, end_time = self._read_midi(midi_filename)
-        total_length = int(end_time * self.sr / playback_speed)
+        total_length = int(end_time * self.sample_rate / playback_speed)
 
         data = np.zeros(total_length)
         for note, velocity, note_start, note_end in seq:
@@ -85,7 +85,7 @@ class NoteSynthesizer:
 
         data /= np.max(np.abs(data)) + eps
 
-        return data, self.sr 
+        return data, self.sample_rate 
 
     def preload_notes(self,
                       instrument: str,
@@ -103,7 +103,7 @@ class NoteSynthesizer:
             for v in self.velocities:
                 note_name = self._get_note_name(n, v, instrument, source_type, preset)
                 try:
-                    audio, _ = load_wav(self.dataset_path / note_name, sr=self.sr)
+                    audio, _ = load_wav(self.dataset_path / note_name, sr=self.sample_rate)
                 except:
                     audio = None
                 self.notes[note_name] = audio
@@ -174,7 +174,7 @@ if __name__ == "__main__":
                     help="MIDI file (.mid) to be rendered")
     ap.add_argument('output', required=True, type=Path,
                     help="Output filename")
-    ap.add_argument('--sr', required=False, default=NSYNTH_DEFAULT_SAMPLE_RATE, type=int,
+    ap.add_argument('--sample-rate', required=False, default=NSYNTH_DEFAULT_SAMPLE_RATE, type=int,
                     help=("Sample rate of the output (default: 16000, typical for "
                           "professional audio: 44100, 48000)"))
     ap.add_argument('--instrument', required=False, default="guitar", type=str,
@@ -208,7 +208,7 @@ if __name__ == "__main__":
 
     synth = NoteSynthesizer(
         args.db,
-        sr=args.sr,
+        sample_rate=args.sample_rate,
         velocities=NSYNTH_VELOCITIES,
         preset=args.preset,
         transpose=args.transpose
@@ -227,7 +227,7 @@ if __name__ == "__main__":
         duration_scale=args.duration_scale
     )
 
-    if args.sr != NSYNTH_DEFAULT_SAMPLE_RATE:
-        y = resample(y, NSYNTH_DEFAULT_SAMPLE_RATE, args.sr)
+    if args.sample_rate != NSYNTH_DEFAULT_SAMPLE_RATE:
+        y = resample(y, NSYNTH_DEFAULT_SAMPLE_RATE, args.sample_rate)
 
-    write_wav(args.output, args.sr, np.array(32000.0 * y, np.short))
+    write_wav(args.output, args.sample_rate, np.array(32000.0 * y, np.short))
