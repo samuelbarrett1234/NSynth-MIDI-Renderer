@@ -45,7 +45,7 @@ class NoteSynthesizer:
                         playback_speed: float = 1.0,
                         duration_scale: float = 1.0,
                         transpose: Optional[int] = None,
-                        eps: float = 1.0e-9):
+                        eps: float = 1.0e-9) -> Tuple[np.ndarray, int]:
 
         if preset is None:
             preset = self.preset
@@ -75,7 +75,7 @@ class NoteSynthesizer:
             if not self.preloaded:
                 note_filename = self.dataset_path / note_filename
 
-            note = self._render_note(note_filename, duration, velocity)
+            note = self._render_note(note_filename, duration)
 
             if end_sample <= len(data) and duration == len(note):
                 data[start_sample:end_sample] += note
@@ -148,7 +148,7 @@ class NoteSynthesizer:
 
         return sequence, end_time
 
-    def _render_note(self, note_filename: Path, duration, velocity) -> np.ndarray:
+    def _render_note(self, note_filename: Path, duration) -> np.ndarray:
 
         try:
             if self.preloaded:
